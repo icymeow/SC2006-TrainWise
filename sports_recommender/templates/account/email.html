@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load crispy_forms_tags %}
+
+{% block title %}{% trans "Email Addresses" %} - TrainWise{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <h1 class="card-title text-center mb-4">{% trans "Email Addresses" %}</h1>
+                {% if user.emailaddress_set.all %}
+                    <p>{% trans 'The following email addresses are associated with your account:' %}</p>
+
+                    <form action="{% url 'account_email' %}" class="email_list" method="post">
+                        {% csrf_token %}
+                        <div class="list-group mb-4">
+                            {% for emailaddress in user.emailaddress_set.all %}
+                                <div class="list-group-item">
+                                    <div class="form-check">
+                                        <input id="email_radio_{{forloop.counter}}" type="radio" name="email" 
+                                               {% if emailaddress.primary or user.emailaddress_set.count == 1 %}checked="checked"{% endif %} 
+                                               value="{{emailaddress.email}}"
+                                               class="form-check-input">
+                                        <label class="form-check-label" for="email_radio_{{forloop.counter}}">
+                                            {{ emailaddress.email }}
+                                            {% if emailaddress.verified %}
+                                                <span class="badge bg-success">{% trans "Verified" %}</span>
+                                            {% else %}
+                                                <span class="badge bg-warning text-dark">{% trans "Unverified" %}</span>
+                                            {% endif %}
+                                            {% if emailaddress.primary %}
+                                                <span class="badge bg-primary">{% trans "Primary" %}</span>
+                                            {% endif %}
+                                        </label>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="btn-group w-100" role="group">
+                            <button class="btn btn-secondary" type="submit" name="action_primary">{% trans 'Make Primary' %}</button>
+                            <button class="btn btn-secondary" type="submit" name="action_send">{% trans 'Re-send Verification' %}</button>
+                            <button class="btn btn-danger" type="submit" name="action_remove">{% trans 'Remove' %}</button>
+                        </div>
+                    </form>
+
+                {% else %}
+                    <p class="alert alert-warning">{% trans 'You currently do not have any email address set up.' %}</p>
+                {% endif %}
+
+                {% if can_add_email %}
+                    <h2 class="h4 mt-5 mb-3">{% trans "Add Email Address" %}</h2>
+                    <form method="post" action="{% url 'account_email' %}" class="add_email">
+                        {% csrf_token %}
+                        {{ form|crispy }}
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-primary" name="action_add" type="submit">{% trans "Add Email" %}</button>
+                        </div>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script type="text/javascript">
+(function() {
+    var message = "{% trans 'Do you really want to remove the selected email address?' %}";
+    var actions = document.getElementsByName('action_remove');
+    if (actions.length) {
+        actions[0].addEventListener("click", function(e) {
+            if (!confirm(message)) {
+                e.preventDefault();
+            }
+        });
+    }
+})();
+</script>
+{% endblock %} 

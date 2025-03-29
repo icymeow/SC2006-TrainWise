@@ -1,0 +1,240 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Recommended Activities - Sports Activities Recommender{% endblock %}
+
+{% block extra_css %}
+<style>
+.weather-banner {
+    background: linear-gradient(45deg, #2193b0, #6dd5ed);
+    color: white;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 30px;
+}
+
+.recommendation-card {
+    border: none;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s;
+    margin-bottom: 20px;
+}
+
+.recommendation-card:hover {
+    transform: translateY(-5px);
+}
+
+.score-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: #28a745;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 20px;
+    font-weight: bold;
+}
+
+.activity-meta {
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.weather-icon {
+    font-size: 2.5rem;
+    margin-right: 15px;
+}
+
+.air-quality-indicator {
+    display: inline-block;
+    padding: 5px 10px;
+    border-radius: 15px;
+    font-size: 0.9rem;
+    margin-left: 10px;
+}
+
+.air-quality-good {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.air-quality-moderate {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.air-quality-poor {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Weather Information -->
+    <div class="weather-banner">
+        <div class="row align-items-center">
+            <div class="col-auto">
+                <i class="fas fa-{% if current_weather.condition == 'sunny' %}sun{% elif current_weather.condition == 'rainy' %}cloud-rain{% else %}cloud{% endif %} weather-icon"></i>
+            </div>
+            <div class="col">
+                <h4 class="mb-2">Current Weather Conditions</h4>
+                <p class="mb-0">
+                    {{ current_weather.temperature }}°C | 
+                    {{ current_weather.condition|title }}
+                    <span class="air-quality-indicator air-quality-{% if current_weather.air_quality <= 50 %}good{% elif current_weather.air_quality <= 100 %}moderate{% else %}poor{% endif %}">
+                        Air Quality: {{ current_weather.air_quality }}
+                    </span>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Location Status -->
+    {% if not user_location %}
+    <div class="alert alert-info mb-4" role="alert">
+        <i class="fas fa-location-arrow mr-2"></i>
+        Enable location services to get recommendations based on your location.
+        <button class="btn btn-sm btn-outline-primary ml-3" onclick="requestLocation()">
+            Enable Location
+        </button>
+    </div>
+    {% endif %}
+
+    <!-- Recommendations -->
+    <h3 class="mb-4">Recommended Activities for You</h3>
+    
+    <div class="row">
+        {% for activity, score in recommended_activities %}
+        <div class="col-md-4">
+            <div class="card recommendation-card">
+                <div class="card-body">
+                    <span class="score-badge">Score: {{ score|floatformat:1 }}</span>
+                    
+                    <h5 class="card-title">{{ activity.facility_name }}</h5>
+                    
+                    <div class="activity-meta mb-3">
+                        <div><i class="fas fa-map-marker-alt mr-2"></i> {{ activity.distance|default:'N/A' }} km away</div>
+                        <div><i class="fas fa-running mr-2"></i> {{ activity.get_activity_type_display }}</div>
+                        <div><i class="fas fa-thermometer-half mr-2"></i> {{ activity.get_intensity_display }} Intensity</div>
+                    </div>
+                    
+                    <p class="card-text">{{ activity.activities }}</p>
+                    
+                    <div class="action-buttons">
+                        <button class="btn btn-primary btn-sm" onclick="addToHistory({{ activity.id }})">
+                            <i class="fas fa-plus mr-1"></i> Add to History
+                        </button>
+                        <button class="btn btn-outline-success btn-sm" onclick="toggleFavorite({{ activity.id }})">
+                            <i class="fas fa-bookmark mr-1"></i> Bookmark
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="alert alert-warning" role="alert">
+                <i class="fas fa-exclamation-triangle mr-2"></i>
+                No recommendations available at the moment. Try adjusting your preferences or enabling location services.
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function requestLocation() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                window.location.href = `?latitude=${position.coords.latitude}&longitude=${position.coords.longitude}`;
+            },
+            function(error) {
+                alert('Error getting location: ' + error.message);
+            }
+        );
+    } else {
+        alert('Geolocation is not supported by your browser');
+    }
+}
+
+function addToHistory(activityId) {
+    fetch('/activities/history/add/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({
+            activity_id: activityId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Activity added to your history!');
+            // Optionally refresh the page to update recommendations
+            window.location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error adding activity to history');
+    });
+}
+
+function toggleFavorite(activityId) {
+    fetch('/activities/favorite/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({
+            activity_id: activityId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.is_favorite) {
+            alert('Activity bookmarked!');
+        } else {
+            alert('Activity removed from bookmarks!');
+        }
+        // Optionally refresh the page to update recommendations
+        window.location.reload();
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error updating bookmark');
+    });
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %} 

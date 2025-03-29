@@ -1,0 +1,6 @@
+<button class="favorite-button btn btn-link" 
+        data-activity-id="{{ activity.id }}"
+        data-is-favorite="{% if activity in user.favoriteactivity_set.all %}true{% else %}false{% endif %}">
+    <i class="{% if activity in user.favoriteactivity_set.all %}fas{% else %}far{% endif %} fa-heart" 
+       style="{% if activity in user.favoriteactivity_set.all %}color: red;{% endif %}"></i>
+</button> 
