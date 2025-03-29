@@ -91,9 +91,32 @@ sports_recommender/
 ├── sports_recommender/  # Main project directory
 ├── static/             # Static files (CSS, JS, images)
 ├── templates/          # HTML templates
+├── data/              # Data files for activities and weather
+│   ├── Cleaned_Activities_Data.csv  # Sports facilities data
+│   └── 24hourWeatherForecast.json  # Weather forecast data
 ├── manage.py           # Django management script
 └── requirements.txt    # Project dependencies
 ```
+
+### Data Files
+
+The `data/` directory contains essential data files for the application:
+
+1. `Cleaned_Activities_Data.csv` - Sports facilities and activities information:
+   - Facility names
+   - Activity types
+   - Location information (latitude, longitude)
+   - Indoor/outdoor status
+   - Available activities
+   - Intensity levels
+
+2. `24hourWeatherForecast.json` - Weather forecast data:
+   - Temperature
+   - Weather conditions
+   - Air quality
+   - Updated every 24 hours
+
+These files are used to populate the database and provide real-time weather information for activity recommendations.
 
 ## Features Usage
 
