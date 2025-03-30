@@ -1,0 +1,289 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Favorite Activities - Sports Activities Recommender{% endblock %}
+
+{% block extra_css %}
+<style>
+.favorite-card {
+    transition: transform 0.2s;
+    margin-bottom: 20px;
+}
+
+.favorite-card:hover {
+    transform: translateY(-5px);
+}
+
+.activity-meta {
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+.distance-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: #007bff;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 15px;
+    font-size: 0.9em;
+}
+
+.empty-favorites {
+    text-align: center;
+    padding: 40px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    margin-top: 20px;
+}
+
+.empty-favorites i {
+    font-size: 48px;
+    color: #6c757d;
+    margin-bottom: 15px;
+}
+
+.toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+}
+
+.remove-confirmation {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+}
+
+.confirmation-content {
+    position: relative;
+    background-color: white;
+    margin: 15% auto;
+    padding: 20px;
+    width: 80%;
+    max-width: 500px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.close-confirmation {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    font-size: 24px;
+    cursor: pointer;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">My Favorite Activities</h2>
+    
+    {% if activities %}
+        <div class="row">
+            {% for activity in activities %}
+                <div class="col-md-6">
+                    <div class="card favorite-card">
+                        <div class="card-body">
+                            <span class="distance-badge" id="distance-{{ activity.id }}">
+                                Calculating...
+                            </span>
+                            
+                            <h5 class="card-title">{{ activity.facility_name }}</h5>
+                            
+                            <div class="activity-meta mb-3">
+                                <div><i class="fas fa-running mr-2"></i> {{ activity.get_activity_type_display }}</div>
+                                <div><i class="fas fa-thermometer-half mr-2"></i> {{ activity.get_intensity_display }} Intensity</div>
+                                <div><i class="fas fa-cloud mr-2"></i> {{ activity.get_weather_conditions_display }}</div>
+                            </div>
+                            
+                            <p class="card-text">{{ activity.activities }}</p>
+                            
+                            <div class="d-flex justify-content-between align-items-center">
+                                <a href="{% url 'activities:activity_detail' activity.id %}" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-info-circle mr-1"></i> View Details
+                                </a>
+                                <button class="btn btn-outline-danger btn-sm" onclick="confirmRemove({{ activity.id }}, '{{ activity.facility_name }}')">
+                                    <i class="fas fa-bookmark mr-1"></i> Remove
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-favorites">
+            <i class="fas fa-bookmark"></i>
+            <h4>No Favorite Activities Yet</h4>
+            <p class="text-muted">Start exploring activities and bookmark your favorites!</p>
+            <a href="{% url 'activities:search' %}" class="btn btn-primary">
+                <i class="fas fa-search mr-2"></i>Browse Activities
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Remove Confirmation Modal -->
+<div id="removeConfirmation" class="remove-confirmation">
+    <div class="confirmation-content">
+        <span class="close-confirmation" onclick="closeConfirmation()">&times;</span>
+        <h4>Remove from Favorites</h4>
+        <p>Are you sure you want to remove <span id="activityName"></span> from your favorites?</p>
+        <div class="d-flex justify-content-end">
+            <button class="btn btn-secondary mr-2" onclick="closeConfirmation()">Cancel</button>
+            <button class="btn btn-danger" onclick="removeFavorite()">Remove</button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Notification -->
+<div class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+    <div class="toast-header">
+        <i class="fas fa-info-circle mr-2"></i>
+        <strong class="mr-auto">Notification</strong>
+        <button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+    <div class="toast-body"></div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let activityToRemove = null;
+
+function confirmRemove(activityId, activityName) {
+    activityToRemove = activityId;
+    document.getElementById('activityName').textContent = activityName;
+    document.getElementById('removeConfirmation').style.display = 'block';
+}
+
+function closeConfirmation() {
+    document.getElementById('removeConfirmation').style.display = 'none';
+    activityToRemove = null;
+}
+
+function showToast(message, isError = false) {
+    const toast = document.querySelector('.toast');
+    const toastBody = toast.querySelector('.toast-body');
+    toastBody.textContent = message;
+    
+    // Set toast color based on message type
+    toast.classList.remove('bg-success', 'bg-danger');
+    toast.classList.add(isError ? 'bg-danger' : 'bg-success');
+    
+    // Show toast
+    $(toast).toast('show');
+}
+
+function removeFavorite() {
+    if (!activityToRemove) return;
+    
+    fetch('{% url "activities:toggle_favorite" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({
+            activity_id: activityToRemove
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            // Remove the card from the DOM
+            const card = document.querySelector(`#distance-${activityToRemove}`).closest('.col-md-6');
+            card.remove();
+            
+            // Show success message
+            showToast('Activity removed from favorites');
+            
+            // Check if there are any favorites left
+            const remainingCards = document.querySelectorAll('.favorite-card');
+            if (remainingCards.length === 0) {
+                window.location.reload(); // Reload to show empty state
+            }
+        } else {
+            showToast(data.message || 'Error removing from favorites', true);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('Error removing from favorites. Please try again.', true);
+    })
+    .finally(() => {
+        closeConfirmation();
+    });
+}
+
+// Update distances for all activities
+function updateDistances() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                const userLat = position.coords.latitude;
+                const userLng = position.coords.longitude;
+                
+                fetch('{% url "activities:get_distances" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({
+                        latitude: userLat,
+                        longitude: userLng
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.distances) {
+                        Object.entries(data.distances).forEach(([activityId, distance]) => {
+                            const badge = document.getElementById(`distance-${activityId}`);
+                            if (badge) {
+                                badge.textContent = distance ? `${distance} km` : 'N/A';
+                            }
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error updating distances:', error);
+                });
+            },
+            function(error) {
+                console.error('Error getting location:', error);
+            }
+        );
+    }
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Update distances when page loads
+document.addEventListener('DOMContentLoaded', updateDistances);
+</script>
+{% endblock %} 

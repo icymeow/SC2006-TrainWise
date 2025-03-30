@@ -1,0 +1,8 @@
+Django>=5.0.2
+django-allauth>=0.57.0
+django-crispy-forms>=2.1
+crispy-bootstrap5>=0.7
+python-dotenv>=1.0.0
+requests>=2.31.0  # For weather API calls
+Pillow>=10.0.0   # For image handling
+django-environ>=0.11.2 

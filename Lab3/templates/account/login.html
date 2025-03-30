@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load account socialaccount %}
+{% load crispy_forms_tags %}
+
+{% block title %}{% trans "Sign In" %} - TrainWise{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h1 class="card-title text-center mb-4">{% trans "Sign In" %}</h1>
+
+                {% get_providers as socialaccount_providers %}
+
+                {% if socialaccount_providers %}
+                    <div class="mb-4">
+                        {% include "socialaccount/snippets/provider_list.html" with process="login" %}
+                    </div>
+                    <p class="text-center">{% blocktrans %}Or use your email to sign in:{% endblocktrans %}</p>
+                {% endif %}
+
+                <form class="login" method="POST" action="{% url 'account_login' %}">
+                    {% csrf_token %}
+                    {{ form|crispy }}
+                    {% if redirect_field_value %}
+                        <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
+                    {% endif %}
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-primary" type="submit">{% trans "Sign In" %}</button>
+                    </div>
+                </form>
+
+                <div class="mt-4 text-center">
+                    <p>
+                        {% blocktrans %}Don't have an account yet?
+                        <a href="{{ signup_url }}" class="link-primary">Sign up</a>{% endblocktrans %}
+                    </p>
+                    <p>
+                        <a href="{% url 'account_reset_password' %}" class="link-secondary">{% trans "Forgot Password?" %}</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
