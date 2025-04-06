@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Profile - TrainWise{% endblock %}
+
+{% block extra_css %}
+<style>
+.profile-section {
+    background-color: #f8f9fa;
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.preferences-form {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+
+.help-text {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-top: 0.25rem;
+}
+
+.btn-update {
+    padding: 0.5rem 2rem;
+}
+
+.profile-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.profile-icon {
+    font-size: 3rem;
+    color: #0d6efd;
+    margin-bottom: 1rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="profile-section">
+        <div class="profile-header">
+            <i class="fas fa-user-circle profile-icon"></i>
+            <h1 class="mb-4">Your Profile</h1>
+            <p class="text-muted">Customize your preferences to get better recommendations</p>
+        </div>
+
+        <form method="post" class="preferences-form">
+            {% csrf_token %}
+            {{ form|crispy }}
+            
+            <div class="text-center mt-4">
+                <button type="submit" class="btn btn-primary btn-update">
+                    <i class="fas fa-save me-2"></i>Update Preferences
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add any JavaScript for form validation or dynamic behavior here
+});
+</script>
+{% endblock %} 
