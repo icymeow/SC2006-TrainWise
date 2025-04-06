@@ -120,10 +120,10 @@ def get_activity_score(activity, user_lat, user_lon, user_preferences, weather_d
 def get_recommended_activities(user, user_location, weather_data):
     """
     Get recommended activities based on:
-    1. Weather conditions (filter indoor/outdoor appropriately)
-    2. Distance from user's location (nearest activities)
+    1. Weather conditions (primary filter)
+    2. Distance from user's location (major factor)
     3. User's preferred activity types
-    Returns top 3 nearest matching activities.
+    Returns list of (activity, score) tuples.
     """
     print("Starting recommendation process...")  # Debug log
     
@@ -143,46 +143,126 @@ def get_recommended_activities(user, user_location, weather_data):
     activities = Activity.objects.all()
     print(f"Total activities: {activities.count()}")  # Debug log
 
-    # Filter by user's preferred activity types
+    # Get preferred types for scoring
+    preferred_types = []
     if user_pref.preferred_activity_types:
-        preferred_types = user_pref.get_preferred_activity_types()
-        activities = activities.filter(activity_type__in=preferred_types)
-        print(f"Activities after type filter: {activities.count()}")  # Debug log
+        preferred_types = [pt.strip("[]'\"").strip().lower() for pt in user_pref.get_preferred_activity_types() if pt.strip("[]'\"").strip()]
+        print(f"User preferred activities: {preferred_types}")  # Debug log
 
-    # Check weather conditions
+    # Enhanced weather condition check
     weather_condition = weather_data.get('condition', '').lower()
-    is_bad_weather = any(cond in weather_condition for cond in ['rain', 'thunderstorm', 'snow'])
-    print(f"Weather condition: {weather_condition}, Is bad weather: {is_bad_weather}")  # Debug log
-
-    if is_bad_weather:
-        # If weather is bad, only show indoor activities
-        activities = activities.filter(is_indoor=True)
-        print(f"Activities after weather filter: {activities.count()}")  # Debug log
+    temperature = weather_data.get('temperature', 25)  # Default to 25°C if not provided
+    humidity = weather_data.get('humidity', 70)  # Default to 70% if not provided
     
-    # Calculate distances for all matching activities
-    activities_with_distance = []
+    # Define weather conditions
+    is_rainy = any(cond in weather_condition for cond in ['rain', 'thunderstorm', 'drizzle'])
+    is_hot = temperature > 32
+    is_very_hot = temperature > 35
+    is_humid = humidity > 80
+    print(f"Weather analysis - Rainy: {is_rainy}, Hot: {is_hot}, Very Hot: {is_very_hot}, Humid: {is_humid}")  # Debug log
+
+    # Calculate scores and distances for all activities
+    activities_with_scores = []
     for activity in activities:
         if activity.latitude and activity.longitude:
             try:
+                # Calculate base score
+                score = 0
+                
+                # Activity type matching score (max 40 points) - increased weight for matching
+                activity_list = [act.strip().lower() for act in activity.description.split('/')]
+                matching_activities = 0
+                
+                # Check for exact matches first
+                for pref in preferred_types:
+                    for act in activity_list:
+                        if pref == act or pref in act:
+                            matching_activities += 1
+                            break
+                
+                # If no exact matches, check for partial matches
+                if matching_activities == 0:
+                    for pref in preferred_types:
+                        for act in activity_list:
+                            if pref in act or act in pref:
+                                matching_activities += 0.5  # Partial match gets half points
+                                break
+                
+                # Calculate preference score (increased to 40 points max)
+                preference_score = 40 * (matching_activities / max(len(preferred_types), 1))
+                score += preference_score
+                
+                # Distance score (max 30 points) - more gradual decrease
                 distance = calculate_distance(
                     user_location['latitude'],
                     user_location['longitude'],
                     float(activity.latitude),
                     float(activity.longitude)
                 )
-                activities_with_distance.append((activity, distance))
+                
+                if distance <= float(user_pref.max_distance):
+                    # More gradual distance scoring
+                    if distance <= 2:
+                        score += 30  # Full points for close activities
+                    elif distance <= 5:
+                        score += 25 - ((distance - 2) * 2)  # Gradual decrease
+                    elif distance <= 10:
+                        score += 20 - ((distance - 5))  # Slower decrease
+                    elif distance <= 20:
+                        score += 15 - ((distance - 10) * 0.5)  # Very gradual decrease
+                    else:
+                        score += max(0, 10 - ((distance - 20) * 0.2))  # Minimal decrease for far activities
+                
+                # Weather compatibility score (max 30 points) - balanced importance
+                weather_score = 0
+                
+                # Basic indoor/outdoor scoring
+                if activity.is_indoor:
+                    if is_rainy:
+                        weather_score += 30  # Maximum points for indoor activities during rain
+                    elif is_very_hot:
+                        weather_score += 25  # High points for indoor during very hot weather
+                    elif is_hot:
+                        weather_score += 20  # Good points for indoor during hot weather
+                    else:
+                        weather_score += 15  # Base points for indoor activities
+                else:  # Outdoor activities
+                    if is_rainy:
+                        weather_score -= 5  # Small penalty for outdoor activities in rain
+                    elif is_very_hot:
+                        weather_score -= 2  # Tiny penalty for outdoor in very hot weather
+                    elif is_hot and is_humid:
+                        weather_score += 15  # Moderate score for hot and humid conditions
+                    else:
+                        weather_score += 25  # Good score for outdoor in nice weather
+                
+                # Activity-specific weather adjustments
+                if 'swimming' in str(activity.description).lower():
+                    if is_hot or is_very_hot:
+                        weather_score += 5  # Bonus for swimming in hot weather
+                elif 'gym' in str(activity.description).lower():
+                    if is_rainy or is_very_hot:
+                        weather_score += 5  # Small bonus for gym in bad weather
+                
+                score += min(30, weather_score)  # Cap weather score at 30 points
+                
+                # Only include activities with a minimum score
+                if score > 25:  # Lowered minimum threshold
+                    activities_with_scores.append((activity, score))
+                    print(f"Scored {activity.facility_name}: {score} (Weather: {weather_score}, Distance: {distance}km) - Activities: {activity_list}")  # Debug log
+                
             except (ValueError, TypeError) as e:
-                print(f"Error calculating distance for activity {activity.id}: {e}")  # Debug log
+                print(f"Error calculating score for activity {activity.id}: {e}")  # Debug log
                 continue
 
-    print(f"Activities with valid distances: {len(activities_with_distance)}")  # Debug log
+    print(f"Activities with valid scores: {len(activities_with_scores)}")  # Debug log
 
-    # Sort by distance and get top 3 nearest activities
-    activities_with_distance.sort(key=lambda x: x[1])  # Sort by distance
-    recommended = [activity for activity, _ in activities_with_distance[:3]]
+    # Sort by score (highest first) and get top recommendations
+    activities_with_scores.sort(key=lambda x: x[1], reverse=True)
+    recommended = activities_with_scores[:5]  # Get top 5 recommendations
     
     print(f"Final recommended activities: {len(recommended)}")  # Debug log
-    for activity in recommended:
-        print(f"- {activity.facility_name} ({activity.activity_type})")  # Debug log
+    for activity, score in recommended:
+        print(f"- {activity.facility_name} ({activity.description}): {score}")  # Debug log
     
     return recommended 
