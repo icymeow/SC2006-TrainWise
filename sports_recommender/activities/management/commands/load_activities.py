@@ -15,37 +15,48 @@ class Command(BaseCommand):
         with open(csv_file, 'r', encoding='utf-8') as file:
             csv_reader = csv.DictReader(file)
             for row in csv_reader:
-                # Map intensity levels
-                intensity_map = {
-                    'Low': 'LOW',
-                    'Medium': 'MEDIUM',
-                    'High': 'HIGH'
-                }
+                # Split the activities string into a list
+                activities_list = row['activities'].split('/')
                 
-                # Map activity types
-                activity_type_map = {
-                    'Gym': 'GYM',
-                    'Swimming': 'SWIMMING',
-                    'Tennis': 'TENNIS',
-                    'Basketball': 'BASKETBALL',
-                    'Football': 'FOOTBALL',
-                    'Running': 'RUNNING',
-                    'Yoga': 'YOGA',
-                    'Other': 'OTHER'
-                }
-                
-                Activity.objects.create(
-                    facility_name=row['Facility_Name'],
-                    activity_type=activity_type_map.get(row['Activity_Type'], 'OTHER'),
-                    description=row['Description'],
-                    address=row['Address'],
-                    latitude=float(row['Latitude']) if row['Latitude'] else None,
-                    longitude=float(row['Longitude']) if row['Longitude'] else None,
-                    intensity=intensity_map.get(row['Intensity'], 'MEDIUM'),
-                    operating_hours=row['Operating_Hours'],
-                    price_range=row['Price_Range'],
-                    contact_info=row['Contact_Info'],
-                    image_url=row.get('Image_URL', '')
-                )
+                # For each activity in the facility, create a separate entry
+                for activity in activities_list:
+                    # Map activity types
+                    activity_type_map = {
+                        'Gym': 'GYM',
+                        'Swimming': 'SWIMMING',
+                        'Tennis': 'TENNIS',
+                        'Basketball': 'BASKETBALL',
+                        'Soccer': 'FOOTBALL',  # Map Soccer to Football
+                        'Running': 'RUNNING',
+                        'Jogging': 'RUNNING',  # Map Jogging to Running
+                        'Walking': 'RUNNING',  # Map Walking to Running
+                        'Badminton': 'BADMINTON',
+                        'Table Tennis': 'TABLE_TENNIS',
+                        'Volleyball': 'VOLLEYBALL',
+                        'Squash': 'SQUASH',
+                        'Hockey': 'HOCKEY',
+                        'Pickleball': 'PICKLEBALL',
+                        'Netball': 'NETBALL',
+                        'Lawn Bowl': 'LAWN_BOWL'
+                    }
+                    
+                    # Determine if indoor or outdoor based on Activity Type column
+                    is_indoor = row['Activity Type'] == 'Indoor'
+                    
+                    # Create activity entry
+                    Activity.objects.create(
+                        facility_name=row['Facility Name'],
+                        activity_type=activity_type_map.get(activity.strip(), 'OTHER'),
+                        description=f"{activity.strip()} at {row['Facility Name']}",
+                        address=row['Sports'],  # Using Sports field as location description
+                        latitude=float(row['Latitude']) if row['Latitude'] else None,
+                        longitude=float(row['Longitude']) if row['Longitude'] else None,
+                        intensity='MEDIUM',  # Default intensity
+                        operating_hours='9:00 AM - 10:00 PM',  # Default operating hours
+                        price_range='$',  # Default price range
+                        contact_info='',  # No contact info in CSV
+                        image_url='',  # No image URL in CSV
+                        is_indoor=is_indoor
+                    )
                 
         self.stdout.write(self.style.SUCCESS('Successfully loaded activities data')) 
