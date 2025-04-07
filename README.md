@@ -14,178 +14,230 @@ A Django-based web application that recommends sports activities based on user p
 - Email notifications for workout reminders
 - Responsive design for mobile and desktop
 - Location-based weather updates
+- Caching system for improved performance
+- Weather service integration
 
 ## Prerequisites
 
 Before you begin, ensure you have the following installed:
 - Python 3.8 or higher
 - pip (Python package installer)
-- PostgreSQL (for production)
-- Git (optional, for version control)
+- PostgreSQL (for production) or SQLite (for development)
+- Git
+- Redis (optional, for caching)
 
 ## Setup Instructions
 
 1. **Clone the Repository**
 ```bash
-git clone <repository-url>
+git clone https://github.com/icymeow/SC2006-TrainWise.git
 cd SC2006-TrainWise
 ```
 
 2. **Set Up Virtual Environment**
-```powershell
-# Create a virtual environment
+```bash
 python -m venv venv
 
-# If you get a PowerShell execution policy error, run these commands as administrator:
-# Open PowerShell as administrator and run:
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+# On Windows:
+venv\Scripts\activate
 
-# Now activate the virtual environment (try one of these commands):
-.\venv\Scripts\activate
-# OR if the above doesn't work:
-& .\venv\Scripts\Activate.ps1
+# On Unix or MacOS:
+source venv/bin/activate
 ```
 
 3. **Install Dependencies**
-```powershell
+```bash
 pip install -r requirements.txt
 ```
 
-Current dependencies include:
-- Django 5.0.2+
-- django-allauth 0.57.0+
-- django-crispy-forms 2.1+
-- crispy-bootstrap5 0.7+
-- python-dotenv 1.0.0+
-- requests 2.31.0+
-- Pillow 10.0.0+
-- django-environ 0.11.2+
-- pytz 2024.1+
-- psycopg2-binary 2.9.9+
-- django-cors-headers 4.3.1+
-- whitenoise 6.6.0+
-- gunicorn 21.2.0+
-- django-debug-toolbar 4.3.0+
+4. **Database Setup**
 
-4. **Environment Setup**
+For Development (SQLite):
+```bash
+cd sports_recommender
+python manage.py migrate
+python manage.py loaddata activities/fixtures/initial_data.json
+```
+
+For Production (PostgreSQL):
+```bash
+# Install PostgreSQL and create database
+createdb trainwise_db
+
+# Set DATABASE_URL in .env
+DATABASE_URL=postgres://user:password@localhost:5432/trainwise_db
+
+# Run migrations
+python manage.py migrate
+python manage.py loaddata activities/fixtures/initial_data.json
+```
+
+5. **Environment Configuration**
 Create a `.env` file in the project root with the following variables:
 ```
+# Django Settings
 DJANGO_SECRET_KEY=your-secret-key
+DEBUG=True  # Set to False in production
+ALLOWED_HOSTS=localhost,127.0.0.1
+
+# Database Settings (choose one)
+# For SQLite (development):
+DATABASE_URL=sqlite:///db.sqlite3
+# For PostgreSQL (production):
+# DATABASE_URL=postgres://user:password@localhost:5432/trainwise_db
+
+# Email Configuration
 EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
+EMAIL_USE_TLS=True
 EMAIL_HOST_USER=your-email@gmail.com
 EMAIL_HOST_PASSWORD=your-app-specific-password
+
+# Authentication
 GOOGLE_CLIENT_ID=your-google-client-id
 GOOGLE_CLIENT_SECRET=your-google-client-secret
 FACEBOOK_APP_ID=your-facebook-app-id
 FACEBOOK_APP_SECRET=your-facebook-app-secret
+
+# Weather API
 WEATHER_API_KEY=your-weather-api-key
-DATABASE_URL=your-database-url  # For PostgreSQL in production
+
+# Cache Settings (optional)
+REDIS_URL=redis://localhost:6379/1
 ```
 
-5. **Database Setup**
-```powershell
-# Create and apply migrations
-python manage.py makemigrations
-python manage.py migrate
-
-# Create a superuser (optional)
+6. **Create Superuser**
+```bash
 python manage.py createsuperuser
 ```
 
-6. **Run the Development Server**
-```powershell
+7. **Run Development Server**
+```bash
 python manage.py runserver
 ```
 
-7. **Access the Application**
-- Open your web browser
-- Navigate to http://127.0.0.1:8000/
-- The application should now be running
-
 ## Project Structure
-
 ```
 SC2006-TrainWise/
 ├── sports_recommender/
-│   ├── activities/      # Sports activities and workout history
-│   ├── users/          # User management and authentication
-│   ├── services/       # External services (weather, etc.)
-│   ├── controllers/    # Business logic
-│   └── database/       # Database models and operations
-├── templates/          # HTML templates
-├── static/            # Static files (CSS, JS, images)
-├── media/            # User-uploaded files
-└── manage.py         # Django management script
+│   ├── activities/          # Sports activities app
+│   │   ├── migrations/     # Database migrations
+│   │   ├── fixtures/      # Initial data
+│   │   ├── models.py      # Database models
+│   │   └── views.py       # View logic
+│   ├── Controllers/        # Business logic
+│   │   ├── activity_controller.py
+│   │   ├── recommendation_controller.py
+│   │   ├── user_controller.py
+│   │   └── weather_controller.py
+│   ├── templates/         # HTML templates
+│   ├── static/           # Static files
+│   └── sports_recommender/  # Project settings
+├── requirements.txt       # Project dependencies
+└── README.md            # This file
 ```
 
 ## Development Guidelines
 
 1. **Code Style**
    - Follow PEP 8 guidelines
-   - Use meaningful variable and function names
+   - Use type hints for better code maintainability
    - Add docstrings for functions and classes
    - Keep functions small and focused
 
-2. **Testing**
-   - Write unit tests for new features
-   - Run tests before committing: `python manage.py test`
-   - Ensure test coverage for critical paths
+2. **Database Management**
+   - Always make migrations after model changes:
+     ```bash
+     python manage.py makemigrations
+     python manage.py migrate
+     ```
+   - Backup data regularly:
+     ```bash
+     python manage.py dumpdata > backup.json
+     ```
+   - Load data when needed:
+     ```bash
+     python manage.py loaddata backup.json
+     ```
 
-3. **Version Control**
-   - Create feature branches from `main`
-   - Write clear commit messages
-   - Review code before merging
+3. **Testing**
+   - Run tests before committing:
+     ```bash
+     python manage.py test
+     ```
+   - Check test coverage:
+     ```bash
+     coverage run manage.py test
+     coverage report
+     ```
 
-## Deployment
+## Production Deployment
 
-1. **Production Setup**
-   - Set DEBUG=False in settings
-   - Configure PostgreSQL database
-   - Set up static files with whitenoise
-   - Configure gunicorn for production server
+1. **Security Settings**
+   ```python
+   DEBUG = False
+   ALLOWED_HOSTS = ['your-domain.com']
+   SECURE_SSL_REDIRECT = True
+   SESSION_COOKIE_SECURE = True
+   CSRF_COOKIE_SECURE = True
+   ```
 
-2. **Environment Variables**
-   - Ensure all sensitive data is in environment variables
-   - Use different settings for development and production
+2. **Static Files**
+   ```bash
+   python manage.py collectstatic
+   ```
 
-3. **Security Checklist**
-   - Enable CSRF protection
-   - Set secure SSL/HTTPS settings
-   - Configure allowed hosts
-   - Set up proper CORS headers
+3. **Database Migration**
+   ```bash
+   python manage.py migrate --no-input
+   ```
+
+4. **Gunicorn Setup**
+   ```bash
+   gunicorn sports_recommender.wsgi:application
+   ```
 
 ## Troubleshooting
 
-Common issues and solutions:
-
-1. **Database Connection Issues**
-   - Verify PostgreSQL is running
-   - Check database URL format
-   - Ensure database user has proper permissions
+1. **Database Issues**
+   - Check database connection settings in .env
+   - Verify PostgreSQL is running (for production)
+   - Run migrations in order:
+     ```bash
+     python manage.py migrate auth
+     python manage.py migrate
+     ```
 
 2. **Static Files Not Loading**
-   - Run `python manage.py collectstatic`
+   - Run collectstatic
    - Check STATIC_ROOT and STATIC_URL settings
    - Verify whitenoise configuration
 
 3. **Email Configuration**
    - Verify SMTP settings
-   - Check email credentials
-   - Test email backend configuration
+   - Test email backend:
+     ```python
+     python manage.py shell
+     from django.core.mail import send_mail
+     send_mail('Test', 'Test message', 'from@example.com', ['to@example.com'])
+     ```
 
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
+4. **Cache Issues**
+   - Verify Redis is running (if using Redis)
+   - Clear cache if needed:
+     ```python
+     python manage.py shell
+     from django.core.cache import cache
+     cache.clear()
+     ```
 
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## Contact
+## Support
 
-For any queries or support, please contact the development team. 
+For support:
+1. Check the troubleshooting section
+2. Open an issue on GitHub
+3. Contact the development team 
