@@ -1,17 +1,17 @@
 from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
+from django.db.models import Q
+from django.conf import settings
+from activities.models import Activity
+from activities.forms import ActivitySearchForm
+from ..Database.user_database import UserDatabase
+from ..Database.workout_history_database import WorkoutHistory
+import math
 from ..Database.activity_database import ActivityDatabase
 from ..Database.favorite_activities_database import FavoriteActivitiesDatabase
-from django.db.models import Q
 from django.contrib.gis.geos import Point
 from django.contrib.gis.db.models.functions import Distance
-from ..UI.forms.activity_forms import ActivitySearchForm
-from ..Database.activity_database import Activity
-from ..Database.user_database import UserDatabase
-import math
-from django.conf import settings
-from ..Database.workout_history_database import WorkoutHistory
 
 def activity_list_controller(request):
     activities = ActivityDatabase.objects.all()

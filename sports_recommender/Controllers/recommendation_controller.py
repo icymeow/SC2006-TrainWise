@@ -1,11 +1,11 @@
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
-from ..Database.favorite_activities_database import FavoriteActivitiesDatabase
-from ..Database.activity_database import ActivityDatabase
+from activities.models import Activity
+from activities.models import FavoriteActivity
 
 @login_required
 def favorite_activities_controller(request):
-    favorites = FavoriteActivitiesDatabase.objects.filter(user=request.user)
+    favorites = FavoriteActivity.objects.filter(user=request.user)
     return render(request, 'UI/templates/recommendations/favorites.html', {'favorites': favorites})
 
 @login_required
@@ -14,7 +14,7 @@ def recommended_activities_controller(request):
     user_preferences = request.user.preferences or {}
     
     # Filter activities based on user preferences
-    activities = ActivityDatabase.objects.all()
+    activities = Activity.objects.all()
     
     # Apply filters based on user preferences
     if 'intensity' in user_preferences:
