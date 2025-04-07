@@ -2,6 +2,50 @@
 
 A Django-based web application that recommends sports activities based on user preferences, weather conditions, and location.
 
+## 🚀 Quick Start for Testing
+
+1. **Clone the Repository**
+```bash
+git clone https://github.com/icymeow/SC2006-TrainWise.git
+cd SC2006-TrainWise
+```
+
+2. **Set Up Python Environment**
+```bash
+# Create and activate virtual environment
+python -m venv venv
+venv\Scripts\activate  # On Windows
+source venv/bin/activate  # On Unix/MacOS
+
+# Install dependencies
+pip install -r requirements.txt
+```
+
+3. **Initialize the Database**
+```bash
+cd sports_recommender
+python manage.py migrate
+python manage.py loaddata activities/fixtures/initial_data.json
+```
+
+4. **Create a Superuser (Optional)**
+```bash
+python manage.py createsuperuser
+```
+
+5. **Run the Development Server**
+```bash
+python manage.py runserver
+```
+
+6. **Access the Application**
+- Open your web browser
+- Go to http://127.0.0.1:8000/
+- Register a new account using your email
+- Start exploring activities and getting recommendations!
+
+Note: Email verification is required for registration. You will receive a verification email to activate your account.
+
 ## Features
 
 - User registration and authentication (email, Google, Facebook)
