@@ -13,6 +13,10 @@ from .services import get_recommended_activities, get_weather_data
 import requests
 from django.contrib import messages
 from django.db.models import Q
+from django.core.mail import send_mail, BadHeaderError
+from django.http import HttpResponse
+import smtplib
+import ssl
 
 def get_weather_data():
     """Fetch weather data from wttr.in API"""
@@ -166,6 +170,7 @@ def recommendations(request):
     """View for displaying personalized activity recommendations."""
     print("\n=== Starting recommendations view ===")  # Debug log
     
+    # Get user preferences
     user_pref = UserPreference.objects.filter(user=request.user).first()
     
     if not user_pref:
@@ -176,9 +181,14 @@ def recommendations(request):
     print(f"User preferences found for user {request.user.username}")  # Debug log
     print(f"Preferred activity types: {user_pref.get_preferred_activity_types()}")  # Debug log
     
-    # Get weather data
+    # Get current weather data
     weather_data = get_weather_data()
     print(f"Weather data: {weather_data}")  # Debug log
+    
+    # Get user's favorite activities
+    favorite_activities = []
+    if request.user.is_authenticated:
+        favorite_activities = FavoriteActivity.objects.filter(user=request.user).values_list('activity', flat=True)
     
     if request.method == "POST":
         try:
@@ -189,35 +199,39 @@ def recommendations(request):
             }
             print(f"Received location data: {user_location}")  # Debug log
             
-        except (json.JSONDecodeError, ValueError, TypeError) as e:
-            print(f"Error processing location data: {e}")  # Debug log
-            return JsonResponse({'error': 'Invalid location data'}, status=400)
-        
-        # Get recommended activities using new algorithm with real location
-        recommended_activities = get_recommended_activities(request.user, user_location, weather_data)
-        print(f"Got {len(recommended_activities)} recommended activities")  # Debug log
-        
-        # Calculate distances for all recommended activities
-        distances = []
-        for activity in recommended_activities:
-            if activity.latitude and activity.longitude:
-                try:
-                    distance = calculate_distance(
-                        user_location['latitude'],
-                        user_location['longitude'],
-                        float(activity.latitude),
-                        float(activity.longitude)
-                    )
-                    distances.append({
-                        'activity_id': activity.id,
-                        'distance': round(distance, 1)
-                    })
-                except (ValueError, TypeError) as e:
-                    print(f"Error calculating distance for activity {activity.id}: {e}")  # Debug log
-                    continue
-        
-        print(f"Calculated distances for {len(distances)} activities")  # Debug log
-        return JsonResponse({'distances': distances})
+            # Get recommended activities using new algorithm with real location
+            recommended_activities = get_recommended_activities(request.user, user_location, weather_data)
+            print(f"Got {len(recommended_activities)} recommended activities")  # Debug log
+            
+            # Calculate distances for all recommended activities
+            distances = []
+            for activity, score in recommended_activities:
+                if activity.latitude and activity.longitude:
+                    try:
+                        distance = calculate_distance(
+                            user_location['latitude'],
+                            user_location['longitude'],
+                            float(activity.latitude),
+                            float(activity.longitude)
+                        )
+                        distances.append({
+                            'activity_id': activity.id,
+                            'distance': round(distance, 1),
+                            'score': round(score, 1)
+                        })
+                    except (ValueError, TypeError) as e:
+                        print(f"Error calculating distance for activity {activity.id}: {e}")  # Debug log
+                        continue
+            
+            print(f"Calculated distances for {len(distances)} activities")  # Debug log
+            return JsonResponse({'distances': distances})
+            
+        except json.JSONDecodeError as e:
+            print(f"Error decoding JSON: {e}")  # Debug log
+            return JsonResponse({'error': 'Invalid JSON data'}, status=400)
+        except Exception as e:
+            print(f"Error processing request: {e}")  # Debug log
+            return JsonResponse({'error': str(e)}, status=500)
     
     # For GET requests, use default location (will be updated by JavaScript)
     default_location = {
@@ -230,9 +244,9 @@ def recommendations(request):
     print(f"Initial recommendations count: {len(recommended_activities)}")  # Debug log
     
     context = {
-        'weather': weather_data,
-        'activities': recommended_activities,
-        'user_preferences': user_pref,
+        'recommended_activities': recommended_activities,
+        'weather_data': weather_data,
+        'favorite_activities': favorite_activities,
     }
     
     return render(request, 'activities/recommendations.html', context)
@@ -268,16 +282,21 @@ def get_distances(request):
         
         for activity in activities:
             if activity.latitude and activity.longitude:
-                distance = calculate_distance(
-                    user_lat, user_lng,
-                    float(activity.latitude), float(activity.longitude)
-                )
-                distances[activity.id] = distance
+                try:
+                    distance = calculate_distance(
+                        user_lat, user_lng,
+                        float(activity.latitude), float(activity.longitude)
+                    )
+                    distances[str(activity.id)] = round(distance, 1)
+                except (ValueError, TypeError) as e:
+                    print(f"Error calculating distance for activity {activity.id}: {e}")
+                    distances[str(activity.id)] = None
             else:
-                distances[activity.id] = None
+                distances[str(activity.id)] = None
         
         return JsonResponse({'distances': distances})
     except (ValueError, json.JSONDecodeError, KeyError) as e:
+        print(f"Error in get_distances: {e}")
         return JsonResponse({'error': str(e)}, status=400)
 
 @login_required
@@ -468,7 +487,10 @@ def search_activities(request):
     
     # Apply activity type filter
     if activity_type:
-        activities = activities.filter(activity_type=activity_type)
+        activities = activities.filter(
+            Q(activity_type=activity_type) |
+            Q(description__icontains=activity_type.title())  # Convert RUNNING to Running
+        )
     
     # Apply indoor/outdoor filter
     if location_type:
@@ -479,8 +501,7 @@ def search_activities(request):
     if search_query:
         activities = activities.filter(
             Q(facility_name__icontains=search_query) |
-            Q(description__icontains=search_query) |
-            Q(activities__icontains=search_query)
+            Q(description__icontains=search_query)
         )
     
     # Get user's favorite activities if logged in
@@ -553,13 +574,18 @@ def profile(request):
     if request.method == 'POST':
         form = UserPreferenceForm(request.POST, instance=user_pref)
         if form.is_valid():
-            form.save()
+            # Save the form and update the instance
+            user_pref = form.save()
             messages.success(request, 'Your preferences have been updated!')
             return redirect('activities:profile')
     else:
-        form = UserPreferenceForm(instance=user_pref)
+        # For GET requests, initialize form with current preferences
+        initial_data = {}
+        if user_pref.preferred_activity_types:
+            initial_data['preferred_activity_types'] = user_pref.get_preferred_activity_types()
+        form = UserPreferenceForm(instance=user_pref, initial=initial_data)
 
-    return render(request, 'users/profile.html', {'form': form})
+    return render(request, 'activities/profile.html', {'form': form})
 
 @login_required
 def workout_history(request, activity_id):
@@ -595,4 +621,59 @@ def workout_history_list(request):
         'history_entries': history_entries,
         'activities': activities,
     }
-    return render(request, 'activities/workout_history.html', context) 
+    return render(request, 'activities/workout_history.html', context)
+
+def test_email(request):
+    """Test view to verify email configuration with detailed error handling"""
+    try:
+        # First test SMTP connection
+        smtp_server = "smtp.gmail.com"
+        port = 587  # For starttls
+        sender_email = settings.EMAIL_HOST_USER
+        password = settings.EMAIL_HOST_PASSWORD
+
+        # Create a secure SSL/TLS connection
+        context = ssl.create_default_context()
+
+        # Try to log in to server and send email
+        try:
+            server = smtplib.SMTP(smtp_server, port)
+            server.ehlo()  # Can be omitted
+            server.starttls(context=context)  # Secure the connection
+            server.ehlo()  # Can be omitted
+            server.login(sender_email, password)
+            print("SMTP connection successful!")
+            server.quit()
+
+            # If SMTP connection works, try sending email through Django
+            send_mail(
+                'Test Email from TrainWise',
+                'This is a test email to verify your email configuration is working correctly.',
+                settings.EMAIL_HOST_USER,
+                [settings.EMAIL_HOST_USER],  # Sending to yourself for testing
+                fail_silently=False,
+            )
+            return HttpResponse(
+                'SMTP connection test successful! Email sent successfully! '
+                f'Check your inbox at {settings.EMAIL_HOST_USER}. '
+                'Note: The email might take a few minutes to arrive.'
+            )
+        except smtplib.SMTPAuthenticationError as e:
+            return HttpResponse(
+                f'SMTP Authentication failed. This usually means your email or app password is incorrect.<br><br>'
+                f'Error details: {str(e)}<br><br>'
+                f'Current email: {settings.EMAIL_HOST_USER}<br>'
+                'Please verify your app password is correct.'
+            )
+        except smtplib.SMTPException as e:
+            return HttpResponse(f'SMTP error occurred: {str(e)}')
+    except Exception as e:
+        return HttpResponse(
+            f'Failed to send test email. Error type: {type(e).__name__}<br>'
+            f'Error details: {str(e)}<br><br>'
+            f'Current email settings:<br>'
+            f'EMAIL_HOST: {settings.EMAIL_HOST}<br>'
+            f'EMAIL_PORT: {settings.EMAIL_PORT}<br>'
+            f'EMAIL_USE_TLS: {settings.EMAIL_USE_TLS}<br>'
+            f'EMAIL_HOST_USER: {settings.EMAIL_HOST_USER}'
+        ) 

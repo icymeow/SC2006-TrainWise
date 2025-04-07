@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load i18n %}
-{% load account socialaccount %}
+{% load account %}
 {% load crispy_forms_tags %}
 
 {% block title %}{% trans "Sign Up" %} - TrainWise{% endblock %}
@@ -11,15 +11,6 @@
         <div class="card">
             <div class="card-body">
                 <h1 class="card-title text-center mb-4">{% trans "Sign Up" %}</h1>
-
-                {% get_providers as socialaccount_providers %}
-
-                {% if socialaccount_providers %}
-                    <div class="mb-4">
-                        {% include "socialaccount/snippets/provider_list.html" with process="signup" %}
-                    </div>
-                    <p class="text-center">{% blocktrans %}Or create an account with email:{% endblocktrans %}</p>
-                {% endif %}
 
                 <form class="signup" id="signup_form" method="POST" action="{% url 'account_signup' %}">
                     {% csrf_token %}

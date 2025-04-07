@@ -25,4 +25,5 @@ urlpatterns = [
     path('history/<int:pk>/remove/', remove_from_history_controller, name='remove_from_history'),
     
     path('get-distances/', views.get_distances, name='get_distances'),
+    path('test-email/', views.test_email, name='test_email'),
 ] 

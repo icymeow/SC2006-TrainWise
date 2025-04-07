@@ -1,21 +1,21 @@
 from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
-from django.db.models import Q
-from django.conf import settings
-from activities.models import Activity
-from activities.forms import ActivitySearchForm
-from ..Database.user_database import UserDatabase
-from ..Database.workout_history_database import WorkoutHistory
-import math
 from ..Database.activity_database import ActivityDatabase
 from ..Database.favorite_activities_database import FavoriteActivitiesDatabase
+from django.db.models import Q
 from django.contrib.gis.geos import Point
 from django.contrib.gis.db.models.functions import Distance
+from ..UI.forms.activity_forms import ActivitySearchForm
+from ..Database.activity_database import Activity
+from ..Database.user_database import UserDatabase
+import math
+from django.conf import settings
+from ..Database.workout_history_database import WorkoutHistory
 
 def activity_list_controller(request):
     activities = ActivityDatabase.objects.all()
-    return render(request, 'UI/templates/activities/activity_list.html', {'activities': activities})
+    return render(request, 'activities/activity_list.html', {'activities': activities})
 
 def activity_detail_controller(request, activity_id):
     activity = get_object_or_404(Activity, pk=activity_id)
@@ -36,7 +36,7 @@ def activity_detail_controller(request, activity_id):
         'current_weather': current_weather,
         'google_maps_api_key': settings.GOOGLE_MAPS_API_KEY,
     }
-    return render(request, 'UI/templates/activities/activity_detail.html', context)
+    return render(request, 'activities/activity_detail.html', context)
 
 @login_required
 def toggle_favorite_controller(request, pk):
@@ -151,7 +151,7 @@ def search_activities(request):
         'form': form,
         'activities': activities,
     }
-    return render(request, 'UI/templates/activities/search.html', context)
+    return render(request, 'activities/search.html', context)
 
 @login_required
 def get_activity_recommendations(request):

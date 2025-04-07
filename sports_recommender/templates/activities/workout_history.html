@@ -1,0 +1,278 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Workout History - Sports Activities Recommender{% endblock %}
+
+{% block extra_css %}
+<style>
+.history-card {
+    transition: transform 0.2s;
+    margin-bottom: 20px;
+}
+
+.history-card:hover {
+    transform: translateY(-5px);
+}
+
+.activity-meta {
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+.empty-history {
+    text-align: center;
+    padding: 40px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    margin-top: 20px;
+}
+
+.empty-history i {
+    font-size: 48px;
+    color: #6c757d;
+    margin-bottom: 15px;
+}
+
+.toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+}
+
+.remove-confirmation {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+}
+
+.confirmation-content {
+    position: relative;
+    background-color: white;
+    margin: 15% auto;
+    padding: 20px;
+    width: 80%;
+    max-width: 500px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.close-confirmation {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    font-size: 24px;
+    cursor: pointer;
+}
+
+.rating-stars {
+    color: #ffc107;
+}
+
+.duration-badge {
+    background-color: #28a745;
+    color: white;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Workout History</h2>
+        <a href="{% url 'activities:search' %}" class="btn btn-primary">
+            <i class="fas fa-plus mr-2"></i>Add New Activity
+        </a>
+    </div>
+    
+    {% if history_entries %}
+        <div class="row">
+            {% for entry in history_entries %}
+                <div class="col-md-6">
+                    <div class="card history-card" id="history-{{ entry.id }}">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <h5 class="card-title mb-0">{{ entry.activity.facility_name }}</h5>
+                                <span class="duration-badge">
+                                    {{ entry.duration|default:"No duration" }}
+                                </span>
+                            </div>
+                            
+                            <div class="activity-meta mb-3">
+                                <div><i class="fas fa-calendar mr-2"></i> {{ entry.date_completed|date:"F j, Y" }}</div>
+                                <div><i class="fas fa-running mr-2"></i> {{ entry.activity.get_activity_type_display }}</div>
+                                <div><i class="fas fa-thermometer-half mr-2"></i> {{ entry.activity.get_intensity_display }} Intensity</div>
+                            </div>
+                            
+                            {% if entry.notes %}
+                                <p class="card-text"><i class="fas fa-sticky-note mr-2"></i>{{ entry.notes }}</p>
+                            {% endif %}
+                            
+                            {% if entry.rating %}
+                                <div class="rating-stars mb-3">
+                                    {% for i in "12345"|make_list %}
+                                        {% if forloop.counter <= entry.rating %}
+                                            <i class="fas fa-star"></i>
+                                        {% else %}
+                                            <i class="far fa-star"></i>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            
+                            <div class="d-flex justify-content-between align-items-center">
+                                <a href="{% url 'activities:activity_detail' entry.activity.id %}" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-info-circle mr-1"></i> View Details
+                                </a>
+                                <button class="btn btn-outline-danger btn-sm" onclick="confirmRemove({{ entry.id }}, '{{ entry.activity.facility_name }}')">
+                                    <i class="fas fa-trash mr-1"></i> Remove
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-history">
+            <i class="fas fa-history"></i>
+            <h4>No Workout History Yet</h4>
+            <p class="text-muted">Start tracking your activities to build your workout history!</p>
+            <a href="{% url 'activities:search' %}" class="btn btn-primary">
+                <i class="fas fa-search mr-2"></i>Browse Activities
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Remove Confirmation Modal -->
+<div id="removeConfirmation" class="remove-confirmation">
+    <div class="confirmation-content">
+        <span class="close-confirmation" onclick="closeConfirmation()">&times;</span>
+        <h4>Remove from History</h4>
+        <p>Are you sure you want to remove <span id="activityName"></span> from your workout history?</p>
+        <div class="d-flex justify-content-end">
+            <button class="btn btn-secondary mr-2" onclick="closeConfirmation()">Cancel</button>
+            <button class="btn btn-danger" onclick="removeHistory()">Remove</button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Notification -->
+<div class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+    <div class="toast-header">
+        <i class="fas fa-info-circle mr-2"></i>
+        <strong class="mr-auto">Notification</strong>
+        <button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+    <div class="toast-body"></div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let historyToRemove = null;
+
+function confirmRemove(historyId, activityName) {
+    historyToRemove = historyId;
+    document.getElementById('activityName').textContent = activityName;
+    document.getElementById('removeConfirmation').style.display = 'block';
+}
+
+function closeConfirmation() {
+    document.getElementById('removeConfirmation').style.display = 'none';
+    historyToRemove = null;
+}
+
+function showToast(message, isError = false) {
+    const toast = document.querySelector('.toast');
+    const toastBody = toast.querySelector('.toast-body');
+    toastBody.textContent = message;
+    
+    // Set toast color based on message type
+    toast.classList.remove('bg-success', 'bg-danger');
+    toast.classList.add(isError ? 'bg-danger' : 'bg-success');
+    
+    // Show toast
+    $(toast).toast('show');
+}
+
+function removeHistory() {
+    if (!historyToRemove) return;
+    
+    fetch(`{% url 'activities:remove_from_history' 0 %}`.replace('0', historyToRemove), {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Remove the card from the DOM
+            const card = document.getElementById(`history-${historyToRemove}`).closest('.col-md-6');
+            if (card) {
+                card.remove();
+                
+                // Show success message
+                showToast('Activity removed from history');
+                
+                // Check if there are any entries left
+                const remainingCards = document.querySelectorAll('.history-card');
+                if (remainingCards.length === 0) {
+                    // Replace content with empty state instead of reloading
+                    const container = document.querySelector('.row');
+                    container.innerHTML = `
+                        <div class="col-12">
+                            <div class="empty-history">
+                                <i class="fas fa-history"></i>
+                                <h4>No Workout History Yet</h4>
+                                <p class="text-muted">Start tracking your activities to build your workout history!</p>
+                                <a href="{% url 'activities:search' %}" class="btn btn-primary">
+                                    <i class="fas fa-search mr-2"></i>Browse Activities
+                                </a>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+        } else {
+            showToast(data.error || 'Error removing from history', true);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('Error removing from history. Please try again.', true);
+    })
+    .finally(() => {
+        closeConfirmation();
+    });
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %} 

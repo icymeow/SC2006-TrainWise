@@ -15,7 +15,7 @@ from ..UI.forms.user_forms import UserRegistrationForm, UserProfileForm, FirstTi
 class UserRegistrationController(CreateView):
     form_class = UserRegistrationForm
     success_url = reverse_lazy('login')
-    template_name = 'UI/templates/users/register.html'
+    template_name = 'users/register.html'
 
     def form_valid(self, form):
         response = super().form_valid(form)
@@ -75,7 +75,7 @@ def first_time_preferences_controller(request):
     else:
         form = FirstTimePreferencesForm(instance=request.user)
     
-    return render(request, 'UI/templates/users/first_time_preferences.html', {'form': form})
+    return render(request, 'users/first_time_preferences.html', {'form': form})
 
 @login_required
 def user_profile_controller(request):
@@ -87,7 +87,7 @@ def user_profile_controller(request):
             return redirect('profile')
     else:
         form = UserProfileForm(instance=request.user)
-    return render(request, 'UI/templates/users/profile.html', {'form': form})
+    return render(request, 'users/profile.html', {'form': form})
 
 @login_required
 def delete_account_controller(request):
@@ -108,7 +108,7 @@ def delete_account_controller(request):
             messages.error(request, 'Invalid password. Please try again.')
             return redirect('delete_account')
             
-    return render(request, 'UI/templates/users/delete_account.html')
+    return render(request, 'users/delete_account.html')
 
 def resend_verification_email(request):
     if request.method == 'POST':

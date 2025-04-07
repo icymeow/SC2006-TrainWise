@@ -1,0 +1,276 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Search Activities - Sports Activities Recommender{% endblock %}
+
+{% block extra_css %}
+<style>
+.weather-info {
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.weather-info.sunny {
+    background-color: #fff3cd;
+}
+
+.weather-info.cloudy {
+    background-color: #e2e3e5;
+}
+
+.weather-info.rainy {
+    background-color: #cce5ff;
+}
+
+.distance-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: #007bff;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 15px;
+    font-size: 0.9em;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Search Activities</h2>
+    
+    <!-- Search Filters -->
+    <div class="search-filters">
+        <form method="GET" class="row g-3" id="searchForm">
+            <div class="col-md-4">
+                <label for="activity_type" class="form-label">Activity Type</label>
+                <select name="activity_type" id="activity_type" class="form-select">
+                    <option value="">All Types</option>
+                    {% for type_code, type_name in activity_types %}
+                        <option value="{{ type_code }}" {% if selected_type == type_code %}selected{% endif %}>
+                            {{ type_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="col-md-4">
+                <label for="location_type" class="form-label">Location Type</label>
+                <select name="location_type" id="location_type" class="form-select">
+                    <option value="">All Locations</option>
+                    <option value="indoor" {% if selected_location == 'indoor' %}selected{% endif %}>Indoor</option>
+                    <option value="outdoor" {% if selected_location == 'outdoor' %}selected{% endif %}>Outdoor</option>
+                </select>
+            </div>
+            
+            <div class="col-md-4">
+                <label for="query" class="form-label">Search</label>
+                <input type="text" name="query" id="query" class="form-control" placeholder="Search activities..." value="{{ search_query }}">
+            </div>
+            
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-search me-1"></i> Search
+                </button>
+                <button type="button" class="btn btn-secondary ms-2" onclick="resetFilters()">
+                    <i class="fas fa-undo me-1"></i> Reset Filters
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Search Results -->
+    <div class="row mt-4">
+        {% if activities %}
+            {% for activity in activities %}
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100 position-relative">
+                        <span class="distance-badge" id="distance-{{ activity.id }}">
+                            Calculating...
+                        </span>
+                        <div class="card-body">
+                            <h5 class="card-title">{{ activity.facility_name }}</h5>
+                            <p class="card-text">
+                                <strong>Activities:</strong> {{ activity.description }}<br>
+                                <strong>Location:</strong> {% if activity.is_indoor %}
+                                    <span class="badge bg-info">Indoor</span>
+                                {% else %}
+                                    <span class="badge bg-success">Outdoor</span>
+                                {% endif %}<br>
+                            </p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <button class="btn btn-sm btn-outline-primary me-2" onclick="getDirections({{ activity.latitude }}, {{ activity.longitude }})">
+                                        <i class="fas fa-directions me-1"></i> Get Directions
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-info" onclick="addToWorkoutHistory({{ activity.id }})">
+                                        <i class="fas fa-dumbbell me-1"></i> Add to History
+                                    </button>
+                                </div>
+                                <button class="btn btn-sm {% if activity in favorite_activities %}btn-success{% else %}btn-outline-success{% endif %}" 
+                                        onclick="addToFavorites({{ activity.id }}, this)">
+                                    {% if activity in favorite_activities %}
+                                        Remove from Favorites
+                                    {% else %}
+                                        Add to Favorites
+                                    {% endif %}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-12">
+                <div class="alert alert-info">
+                    No activities found matching your search criteria.
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let userLat = null;
+let userLng = null;
+
+// Initialize location tracking when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                userLat = position.coords.latitude;
+                userLng = position.coords.longitude;
+                updateDistances();
+            },
+            function(error) {
+                console.error('Error getting location:', error);
+                updateDistanceBadges('Location unavailable');
+            }
+        );
+    } else {
+        updateDistanceBadges('Location unavailable');
+    }
+});
+
+function updateDistanceBadges(message) {
+    document.querySelectorAll('[id^="distance-"]').forEach(badge => {
+        badge.textContent = message;
+    });
+}
+
+function updateDistances() {
+    if (!userLat || !userLng) return;
+    
+    fetch('{% url "activities:get_distances" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({
+            latitude: userLat,
+            longitude: userLng
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.distances) {
+            Object.entries(data.distances).forEach(([activityId, distance]) => {
+                const badge = document.getElementById(`distance-${activityId}`);
+                if (badge) {
+                    badge.textContent = distance ? `${distance} km` : 'N/A';
+                }
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error updating distances:', error);
+        updateDistanceBadges('Error calculating');
+    });
+}
+
+// Helper function to get CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Reset search filters
+function resetFilters() {
+    document.getElementById('activity_type').value = '';
+    document.getElementById('location_type').value = '';
+    document.getElementById('query').value = '';
+    document.getElementById('searchForm').submit();
+}
+
+// Add to workout history
+function addToWorkoutHistory(activityId) {
+    window.location.href = `{% url 'activities:add_to_history_form' 0 %}`.replace('0', activityId);
+}
+
+// Get directions using Google Maps
+function getDirections(lat, lng) {
+    if (!userLat || !userLng) {
+        alert('Please enable location services to get directions');
+        return;
+    }
+    const url = `https://www.google.com/maps/dir/?api=1&origin=${userLat},${userLng}&destination=${lat},${lng}&travelmode=driving`;
+    window.open(url, '_blank');
+}
+
+// Add activity to favorites
+function addToFavorites(activityId, button) {
+    fetch('{% url "activities:toggle_favorite" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({
+            activity_id: activityId
+        })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.status === 'success') {
+            if (data.is_favorite) {
+                button.textContent = 'Remove from Favorites';
+                button.classList.remove('btn-outline-success');
+                button.classList.add('btn-success');
+                alert('Activity added to favorites!');
+            } else {
+                button.textContent = 'Add to Favorites';
+                button.classList.remove('btn-success');
+                button.classList.add('btn-outline-success');
+                alert('Activity removed from favorites!');
+            }
+        } else {
+            alert(data.message || 'Error updating favorites');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error updating favorites. Please try again.');
+    });
+}
+</script>
+{% endblock %} 
