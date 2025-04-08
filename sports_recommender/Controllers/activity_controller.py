@@ -13,6 +13,7 @@ from ..Database.workout_history_database import WorkoutHistory
 from .weather_controller import WeatherController
 import math
 from django.conf import settings
+from ..Database.user_preference_database import UserPreference
 
 def activity_list_controller(request):
     activities = ActivityDatabase.objects.all()
@@ -137,25 +138,32 @@ def search_activities(request):
             activities = activities.order_by('-popularity')
         elif sort_by == 'recommended':
             # Get user preferences
-            user = request.user
-            user_preferences = UserDatabase.objects.get(id=user.id)
-            
-            # Sort based on user's favorite sports and preferences
-            activities = sorted(
-                activities,
-                key=lambda x: (
-                    # Higher score for matching user's favorite sports
-                    sum(1 for sport in user_preferences.favorite_sports 
-                        if sport in x.activities.lower()),
-                    # Higher score for matching preferred intensity
-                    (1 if x.intensity == user_preferences.preferred_intensity else 0),
-                    # Higher score for matching preferred weather
-                    (1 if x.weather_conditions == user_preferences.preferred_weather else 0),
-                    # Higher score for better air quality
-                    (500 - x.air_quality) / 500
-                ),
-                reverse=True
-            )
+            try:
+                user_preferences = UserPreference.objects.get(user=request.user)
+                preferred_types = user_preferences.get_preferred_activity_types()
+                
+                # Sort based on user's preferences
+                activities = sorted(
+                    activities,
+                    key=lambda x: (
+                        # Higher score for matching activity types
+                        sum(1 for activity_type in preferred_types if activity_type.lower() in x.activity_type.lower()),
+                        # Higher score for indoor/outdoor preference match
+                        1 if x.is_indoor == user_preferences.indoor_preference else 0,
+                        # Higher score for activities within max distance
+                        1 if not hasattr(x, 'distance') or x.distance <= user_preferences.max_distance else 0,
+                        # Higher score for better air quality
+                        (500 - x.air_quality) / 500 if hasattr(x, 'air_quality') else 0
+                    ),
+                    reverse=True
+                )
+            except UserPreference.DoesNotExist:
+                # If no preferences, sort by air quality as a fallback
+                activities = sorted(
+                    activities,
+                    key=lambda x: (500 - x.air_quality) / 500 if hasattr(x, 'air_quality') else 0,
+                    reverse=True
+                )
     
     context = {
         'form': form,

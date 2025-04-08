@@ -11,6 +11,7 @@ from django.utils.encoding import force_bytes, force_str
 from django.contrib.auth.tokens import default_token_generator
 from ..Database.user_database import UserDatabase
 from ..UI.forms.user_forms import UserRegistrationForm, UserProfileForm, FirstTimePreferencesForm
+from ..activities.models import UserPreference
 
 class UserRegistrationController(CreateView):
     form_class = UserRegistrationForm
@@ -63,17 +64,36 @@ def verify_email(request, uidb64, token):
 def first_time_preferences_controller(request):
     if not request.user.is_first_time:
         return redirect('home')
-        
+    
+    # Get or create user preferences
+    user_pref, created = UserPreference.objects.get_or_create(user=request.user)
+    
     if request.method == 'POST':
-        form = FirstTimePreferencesForm(request.POST, instance=request.user)
+        form = FirstTimePreferencesForm(request.POST, instance=user_pref)
         if form.is_valid():
-            user = form.save(commit=False)
-            user.is_first_time = False
-            user.save()
+            print(f"Form data: {form.cleaned_data}")  # Debug print
+            
+            # Get the activities before saving
+            activities = form.cleaned_data.get('preferred_activity_types', [])
+            print(f"Selected activities: {activities}")  # Debug print
+            
+            # Save the form
+            user_pref = form.save(commit=False)
+            user_pref.set_preferred_activity_types(activities)
+            user_pref.save()
+            print(f"Saved preferences: {user_pref.preferred_activity_types}")  # Debug print
+            
+            # Update user's first_time flag
+            request.user.is_first_time = False
+            request.user.save()
+            
             messages.success(request, 'Your preferences have been saved!')
             return redirect('home')
+        else:
+            print(f"Form errors: {form.errors}")  # Debug print
+            messages.error(request, 'Please correct the errors below.')
     else:
-        form = FirstTimePreferencesForm(instance=request.user)
+        form = FirstTimePreferencesForm(instance=user_pref)
     
     return render(request, 'UI/templates/users/first_time_preferences.html', {'form': form})
 

@@ -572,12 +572,37 @@ def profile(request):
     user_pref = UserPreference.objects.get_or_create(user=request.user)[0]
 
     if request.method == 'POST':
+        print(f"POST data received: {request.POST}")  # Debug log
         form = UserPreferenceForm(request.POST, instance=user_pref)
         if form.is_valid():
-            # Save the form and update the instance
-            user_pref = form.save()
+            print(f"Form is valid. Cleaned data: {form.cleaned_data}")  # Debug log
+            
+            # Get the activities before saving
+            activities = form.cleaned_data.get('preferred_activity_types', [])
+            if not activities:
+                print("No activities selected")  # Debug log
+            else:
+                print(f"Selected activities: {activities}")  # Debug log
+            
+            # Save the form but don't commit yet
+            user_pref = form.save(commit=False)
+            
+            # Explicitly set the activities
+            if activities:
+                user_pref.preferred_activity_types = ','.join(activities)
+            else:
+                user_pref.preferred_activity_types = ''
+            
+            # Now save
+            user_pref.save()
+            print(f"Saved preferences. Raw value: {user_pref.preferred_activity_types}")  # Debug log
+            print(f"Get method returns: {user_pref.get_preferred_activity_types()}")  # Debug log
+            
             messages.success(request, 'Your preferences have been updated!')
             return redirect('activities:profile')
+        else:
+            print(f"Form errors: {form.errors}")  # Debug log
+            messages.error(request, 'Please correct the errors below.')
     else:
         # For GET requests, initialize form with current preferences
         initial_data = {}
@@ -627,8 +652,8 @@ def test_email(request):
     """Test view to verify email configuration with detailed error handling"""
     try:
         # First test SMTP connection
-        smtp_server = "smtp.gmail.com"
-        port = 587  # For starttls
+        smtp_server = settings.EMAIL_HOST
+        port = settings.EMAIL_PORT
         sender_email = settings.EMAIL_HOST_USER
         password = settings.EMAIL_HOST_PASSWORD
 
@@ -668,12 +693,4 @@ def test_email(request):
         except smtplib.SMTPException as e:
             return HttpResponse(f'SMTP error occurred: {str(e)}')
     except Exception as e:
-        return HttpResponse(
-            f'Failed to send test email. Error type: {type(e).__name__}<br>'
-            f'Error details: {str(e)}<br><br>'
-            f'Current email settings:<br>'
-            f'EMAIL_HOST: {settings.EMAIL_HOST}<br>'
-            f'EMAIL_PORT: {settings.EMAIL_PORT}<br>'
-            f'EMAIL_USE_TLS: {settings.EMAIL_USE_TLS}<br>'
-            f'EMAIL_HOST_USER: {settings.EMAIL_HOST_USER}'
-        ) 
+        return HttpResponse(f'General error occurred: {str(e)}') 
