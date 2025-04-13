@@ -6,7 +6,7 @@
 {% block extra_css %}
 <style>
 .hero-section {
-    background-color: #f8f9fa;
+    background-color:rgb(242, 215, 245);
     padding: 60px 0;
     margin-bottom: 40px;
 }
@@ -22,7 +22,7 @@
 
 .feature-icon {
     font-size: 2rem;
-    color: #0d6efd;
+    color:rgb(247, 222, 151);
     margin-bottom: 15px;
 }
 
@@ -37,7 +37,7 @@
 
 .activity-meta {
     font-size: 0.9rem;
-    color: #6c757d;
+    color:rgb(236, 195, 222);
 }
 
 .intensity-badge {
@@ -45,13 +45,13 @@
     padding: 0.25rem 0.5rem;
 }
 
-.intensity-Low { background-color: #28a745; color: white; }
-.intensity-Medium { background-color: #ffc107; color: black; }
-.intensity-High { background-color: #dc3545; color: white; }
+.intensity-Low { background-color:rgb(241, 247, 195); color: #666; }
+.intensity-Medium { background-color: #FAE4CB; color: #666; }
+.intensity-High { background-color: #E1BDE3; color: #666; }
 
 .weather-card {
     transition: all 0.3s ease;
-    background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+    background: linear-gradient(135deg,rgb(249, 239, 123) 0%,rgb(172, 128, 237) 100%);
     color: white;
 }
 .weather-icon {
@@ -72,16 +72,16 @@
     border-radius: 20px;
     font-weight: bold;
 }
-.aqi-Good { background-color: #28a745; color: white; }
-.aqi-Moderate { background-color: #ffc107; color: black; }
-.aqi-Unhealthy { background-color: #fd7e14; color: white; }
-.aqi-Very-Unhealthy { background-color: #dc3545; color: white; }
-.aqi-Hazardous { background-color: #6f42c1; color: white; }
+.aqi-Good { background-color:rgb(226, 217, 246); color: #666; }
+.aqi-Moderate { background-color: #FAE4CB; color: #666; }
+.aqi-Unhealthy { background-color: #F4E2DC; color: #666; }
+.aqi-Very-Unhealthy { background-color: #E9EAFB; color: #666; }
+.aqi-Hazardous { background-color: #CCC6D9; color: white; }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container py-5">
+<div class="container py-5" style="background: linear-gradient(rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.3)), url('https://images.unsplash.com/photo-1551632811-561732d1e306?auto=format&fit=crop&w=1200&q=80') no-repeat center center; background-size: cover; border-radius: 25px; padding: 40px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
     <!-- Weather Information Card -->
     <div class="card mb-4 shadow-sm weather-card">
         <div class="card-body">
@@ -135,30 +135,30 @@
         <div class="col-md-4 mb-3">
             <div class="card h-100 shadow-sm quick-link-card">
                 <div class="card-body text-center">
-                    <i class="fas fa-compass fa-3x mb-3 text-primary"></i>
+                    <i class="fas fa-compass fa-3x mb-3" style="color:rgb(250, 244, 154)"></i>
                     <h3>Find Activities</h3>
                     <p>Discover new activities that match your interests.</p>
-                    <a href="{% url 'activities:search' %}" class="btn btn-primary">Search Activities</a>
+                    <a href="{% url 'activities:search' %}" class="btn" style="background-color:rgb(244, 250, 150); color: #666;">Search Activities</a>
                 </div>
             </div>
         </div>
         <div class="col-md-4 mb-3">
             <div class="card h-100 shadow-sm quick-link-card">
                 <div class="card-body text-center">
-                    <i class="fas fa-star fa-3x mb-3 text-warning"></i>
+                    <i class="fas fa-star fa-3x mb-3" style="color:rgb(250, 219, 183)"></i>
                     <h3>Get Recommendations</h3>
                     <p>Get personalized activity recommendations.</p>
-                    <a href="{% url 'activities:recommendations' %}" class="btn btn-warning">View Recommendations</a>
+                    <a href="{% url 'activities:recommendations' %}" class="btn" style="background-color:rgb(250, 219, 183); color: #666;">View Recommendations</a>
                 </div>
             </div>
         </div>
         <div class="col-md-4 mb-3">
             <div class="card h-100 shadow-sm quick-link-card">
                 <div class="card-body text-center">
-                    <i class="fas fa-history fa-3x mb-3 text-success"></i>
+                    <i class="fas fa-history fa-3x mb-3" style="color:rgb(206, 186, 246)"></i>
                     <h3>Workout History</h3>
                     <p>Track your fitness journey and progress.</p>
-                    <a href="{% url 'activities:workout_history' %}" class="btn btn-success">View History</a>
+                    <a href="{% url 'activities:workout_history' %}" class="btn" style="background-color:rgb(199, 177, 242); color: #666;">View History</a>
                 </div>
             </div>
         </div>

@@ -23,11 +23,11 @@
     position: absolute;
     top: 10px;
     right: 10px;
-    background-color: #007bff;
+    background-color:rgb(138, 193, 252);
     color: white;
-    padding: 5px 10px;
-    border-radius: 15px;
-    font-size: 0.9em;
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 0.95em;
 }
 
 .empty-favorites {
@@ -102,7 +102,6 @@
                             <div class="activity-meta mb-3">
                                 <div><i class="fas fa-running mr-2"></i> {{ activity.get_activity_type_display }}</div>
                                 <div><i class="fas fa-thermometer-half mr-2"></i> {{ activity.get_intensity_display }} Intensity</div>
-                                <div><i class="fas fa-cloud mr-2"></i> {{ activity.get_weather_conditions_display }}</div>
                             </div>
                             
                             <p class="card-text">{{ activity.activities }}</p>

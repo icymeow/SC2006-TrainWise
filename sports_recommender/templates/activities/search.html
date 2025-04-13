@@ -27,11 +27,52 @@
     position: absolute;
     top: 10px;
     right: 10px;
-    background-color: #007bff;
-    color: white;
+    background-color: #DBCDF0;  /* Elegant purple for distance */
+    color: #666;
     padding: 5px 10px;
     border-radius: 15px;
     font-size: 0.9em;
+}
+
+/* Button styles */
+.btn-primary, .btn-outline-primary {
+    background-color: #BFBDE2 !important;  /* Elegant dark blue */
+    border-color: #BFBDE2 !important;
+    color: #666 !important;
+}
+
+.btn-success, .btn-outline-success {
+    background-color:rgb(244, 250, 203) !important;  /* Light orange */
+    border-color:rgb(240, 250, 190) !important;
+    color: #666 !important;
+}
+
+.btn-info, .btn-outline-info {
+    background-color: #FAE4CB !important;  /* Light orange for consistency */
+    border-color: #FAE4CB !important;
+    color: #666 !important;
+}
+
+.btn-secondary {
+    background-color: #E9EAFB !important;  /* Light blue */
+    border-color: #E9EAFB !important;
+    color: #666 !important;
+}
+
+/* Badge colors */
+.bg-info {
+    background-color:rgb(198, 243, 178) !important;  /* Elegant dark blue */
+    color: #666 !important;
+}
+
+.bg-success {
+    background-color:rgb(176, 233, 252) !important;  /* Light orange */
+    color: #666 !important;
+}
+
+/* Icon colors */
+.text-muted {
+    color:rgb(248, 253, 247) !important;  /* Elegant purple for icons */
 }
 </style>
 {% endblock %}
@@ -89,6 +130,21 @@
                         <span class="distance-badge" id="distance-{{ activity.id }}">
                             Calculating...
                         </span>
+                        {% if activity.image_url %}
+                            <img src="{{ activity.image_url }}" class="card-img-top" alt="{{ activity.description }}" style="height: 200px; object-fit: cover;">
+                        {% else %}
+                            <div class="card-img-top d-flex align-items-center justify-content-center" style="height: 200px; background-color:rgb(208, 228, 248);">
+                                {% if activity.activity_type == 'BADMINTON' %}
+                                    <i class="fas fa-table-tennis fa-3x text-muted"></i>
+                                {% elif activity.activity_type == 'SWIMMING' %}
+                                    <i class="fas fa-swimming-pool fa-3x text-muted"></i>
+                                {% elif activity.activity_type == 'GYM' %}
+                                    <i class="fas fa-dumbbell fa-3x text-muted"></i>
+                                {% else %}
+                                    <i class="fas fa-running fa-3x text-muted"></i>
+                                {% endif %}
+                            </div>
+                        {% endif %}
                         <div class="card-body">
                             <h5 class="card-title">{{ activity.facility_name }}</h5>
                             <p class="card-text">

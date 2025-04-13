@@ -19,6 +19,11 @@
     color: #6c757d;
 }
 
+.activity-meta i, .card-text i {
+    color:rgb(136, 133, 141);  /* Elegant purple for icons */
+    margin-right: 8px;
+}
+
 .empty-history {
     text-align: center;
     padding: 40px;
@@ -29,7 +34,7 @@
 
 .empty-history i {
     font-size: 48px;
-    color: #6c757d;
+    color: #DBCDF0;  /* Elegant purple */
     margin-bottom: 15px;
 }
 
@@ -71,15 +76,15 @@
 }
 
 .rating-stars {
-    color: #ffc107;
+    color:rgb(255, 247, 3);  /* Light orange for stars */
 }
 
 .duration-badge {
-    background-color: #28a745;
-    color: white;
-    padding: 3px 8px;
-    border-radius: 12px;
-    font-size: 0.8rem;
+    background-color:rgb(205, 250, 203);  /* Light orange */
+    color: #666;
+    padding: 4px 10px;
+    border-radius: 14px;
+    font-size: 0.9rem;
 }
 </style>
 {% endblock %}
@@ -113,7 +118,7 @@
                             </div>
                             
                             {% if entry.notes %}
-                                <p class="card-text"><i class="fas fa-sticky-note mr-2"></i>{{ entry.notes }}</p>
+                                <p class="card-text"><i class="fas fa-comment-alt mr-2"></i>{{ entry.notes }}</p>
                             {% endif %}
                             
                             {% if entry.rating %}

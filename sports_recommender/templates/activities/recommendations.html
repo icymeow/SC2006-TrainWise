@@ -5,173 +5,312 @@
 
 {% block extra_css %}
 <style>
-.weather-banner {
-    background: linear-gradient(45deg, #AAA1C8, #D5C6E0);
-    color: white;
-    padding: 20px;
-    border-radius: 10px;
-    margin-bottom: 30px;
+.section-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    color: #212529;
 }
 
-.recommendation-card {
+.activities-container {
+    overflow-x: auto;
+    padding: 1rem 0;
+    margin: 0 -1rem;
+}
+
+.activities-row {
+    display: flex;
+    gap: 1.5rem;
+    padding: 0 1rem;
+    min-width: min-content;
+}
+
+.activity-card {
+    flex: 0 0 300px;
     border: none;
+    border-radius: 15px;
+    overflow: hidden;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     transition: transform 0.2s;
-    margin-bottom: 20px;
+    background-color: white;
 }
 
-.recommendation-card:hover {
+.activity-card:hover {
     transform: translateY(-5px);
 }
 
-.score-badge {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    background-color: #967AA1;
-    color: white;
-    padding: 8px 12px;
-    border-radius: 20px;
-    font-weight: bold;
+.activity-image {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    background-color:rgb(226, 239, 252);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.distance-badge {
-    position: absolute;
-    top: 45px;
-    right: 10px;
-    background-color: #AAA1C8;
-    color: white;
-    padding: 5px 10px;
-    border-radius: 15px;
-    font-size: 0.9em;
+.activity-image i {
+    font-size: 3rem;
+    color: #dee2e6;
 }
 
-.activity-meta {
-    font-size: 0.9rem;
+.activity-content {
+    padding: 1.5rem;
+}
+
+.activity-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #212529;
+}
+
+.activity-location {
+    font-size: 0.875rem;
     color: #6c757d;
     margin-bottom: 1rem;
 }
 
-.activity-distance {
-    font-size: 1.1rem;
-    color: #495057;
-    margin-bottom: 0.5rem;
+.activity-meta {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.meta-item {
     display: flex;
     align-items: center;
     gap: 0.5rem;
 }
 
-.activity-type {
-    font-weight: 500;
-    color: #495057;
+.favorite-btn {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: white;
+    border: none;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s;
+    cursor: pointer;
 }
 
-.action-buttons {
+.favorite-btn i {
+    color: #dc3545;
+    font-size: 1.25rem;
+}
+
+.favorite-btn:hover {
+    transform: scale(1.1);
+}
+
+.weather-banner {
+    background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+    color: white;
+    padding: 1.5rem;
+    border-radius: 1rem;
+    margin-bottom: 2rem;
+}
+
+.weather-content {
     display: flex;
-    gap: 10px;
-    margin-top: 15px;
+    align-items: center;
+    gap: 1.5rem;
 }
 
 .weather-icon {
     font-size: 2.5rem;
-    margin-right: 15px;
+}
+
+.weather-info h4 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.weather-info p {
+    margin: 0.5rem 0 0;
+    font-size: 0.875rem;
+    opacity: 0.9;
 }
 
 .air-quality-indicator {
     display: inline-block;
-    padding: 5px 10px;
-    border-radius: 15px;
-    font-size: 0.9rem;
-    margin-left: 10px;
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.75rem;
+    margin-left: 0.75rem;
+    background: rgba(253, 240, 240, 0.2);
 }
 
-.air-quality-good {
-    background-color: #d4edda;
-    color: #155724;
+.action-buttons .btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    font-size: 0.875rem;
+    transition: all 0.2s;
 }
 
-.air-quality-moderate {
-    background-color: #fff3cd;
-    color: #856404;
+.action-buttons .btn:hover {
+    transform: translateY(-2px);
 }
 
-.air-quality-poor {
-    background-color: #f8d7da;
-    color: #721c24;
+.action-buttons .btn i {
+    font-size: 1rem;
 }
+
+.btn-primary, .btn-outline-primary {
+    background-color: #BFBDE2 !important;  /* Elegant dark blue */
+    border-color: #BFBDE2 !important;
+    color: #666 !important;
+}
+
+.btn-success, .btn-outline-success {
+    background-color: #FAE4CB !important;  /* Light orange */
+    border-color: #FAE4CB !important;
+    color: #666 !important;
+}
+
+.btn-info, .btn-outline-info {
+    background-color: #FAE4CB !important;  /* Light orange for consistency */
+    border-color: #FAE4CB !important;
+    color: #666 !important;
+}
+
+.bg-info, .badge-info {
+    background-color: #BFBDE2 !important;  /* Elegant dark blue */
+    color: #666 !important;
+}
+
+.bg-success, .badge-success {
+    background-color: #FAE4CB !important;  /* Light orange */
+    color: #666 !important;
+}
+
+.distance-badge {
+    background-color: #DBCDF0 !important;  /* Elegant purple */
+    color: #666 !important;
+}
+
+.text-muted, .fa-directions, .fa-plus {
+    color: #DBCDF0 !important;  /* Elegant purple for icons */
+}
+
+.btn:hover {
+    opacity: 0.9;
+}
+
+.activity-meta {
+    color: #666;
+}
+
+.intensity-badge {
+    font-size: 0.8rem;
+    padding: 0.25rem 0.5rem;
+}
+
+.intensity-Low { background-color: #ECE9F2; color: #666; }  /* Light lavender */
+.intensity-Medium { background-color: #FAE4CB; color: #666; }  /* Light orange */
+.intensity-High { background-color: #DBCDF0; color: #666; }  /* Elegant purple */
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <!-- Weather Information -->
-    <div class="weather-banner">
-        <div class="row align-items-center">
-            <div class="col-auto">
-                <i class="fas fa-{{ weather_data.icon }} weather-icon"></i>
-            </div>
-            <div class="col">
-                <h4 class="mb-2">Current Weather Conditions</h4>
-                <p class="mb-0">
-                    {{ weather_data.temperature }}°C | 
-                    {{ weather_data.condition|title }}
-                    <span class="air-quality-indicator air-quality-{% if weather_data.aqi <= 2 %}good{% elif weather_data.aqi <= 4 %}moderate{% else %}poor{% endif %}">
-                        Air Quality: {{ weather_data.aqi_label }}
-                    </span>
-                </p>
-            </div>
+<!-- Weather Information -->
+<div class="weather-banner">
+    <div class="weather-content">
+        <i class="fas fa-{{ weather_data.icon }} weather-icon"></i>
+        <div class="weather-info">
+            <h4>Current Weather</h4>
+            <p>
+                {{ weather_data.temperature }}°C | 
+                {{ weather_data.condition|title }}
+                <span class="air-quality-indicator">
+                    Air Quality: {{ weather_data.aqi_label }}
+                </span>
+            </p>
         </div>
     </div>
+</div>
 
-    <!-- Recommendations -->
-    <h3 class="mb-4">Recommended Activities for You</h3>
-    
-    <div class="row">
+<!-- Nearby Activities -->
+<h2 class="section-title">Nearby</h2>
+<div class="activities-container">
+    <div class="activities-row">
         {% for activity, score in recommended_activities %}
-        <div class="col-md-4">
-            <div class="card recommendation-card">
-                <div class="card-body">
-                    <span class="score-badge">Score: {{ score|floatformat:1 }}</span>
-                    <span class="distance-badge" id="distance-{{ activity.id }}">
-                        {% if activity.distance %}
-                            {{ activity.distance|floatformat:1 }} km
+        <div class="activity-card">
+            <div class="position-relative">
+                <div class="activity-image">
+                    {% if activity.image_url %}
+                        <img src="{{ activity.image_url }}" alt="{{ activity.description }}" style="width: 100%; height: 100%; object-fit: cover;">
+                    {% else %}
+                        {% if activity.activity_type == 'BADMINTON' %}
+                        <i class="fas fa-table-tennis"></i>
+                        {% elif activity.activity_type == 'SWIMMING' %}
+                        <i class="fas fa-swimming-pool"></i>
+                        {% elif activity.activity_type == 'GYM' %}
+                        <i class="fas fa-dumbbell"></i>
                         {% else %}
-                            Calculating...
+                        <i class="fas fa-running"></i>
                         {% endif %}
-                    </span>
-                    
-                    <h5 class="card-title">{{ activity.facility_name }}</h5>
-                    
-                    <div class="activity-meta mb-3">
-                        <strong>Activities:</strong> {{ activity.description }}<br>
-                        <strong>Location:</strong> 
-                        <span class="badge {% if activity.is_indoor %}bg-info{% else %}bg-success{% endif %}">
-                            {% if activity.is_indoor %}Indoor{% else %}Outdoor{% endif %}
+                    {% endif %}
+                </div>
+                <button class="favorite-btn" onclick="toggleFavorite({{ activity.id }})">
+                    <i class="{% if activity in favorite_activities %}fas{% else %}far{% endif %} fa-heart"></i>
+                </button>
+            </div>
+            <div class="activity-content">
+                <h3 class="activity-title">{{ activity.description }}</h3>
+                <p class="activity-location">{{ activity.facility_name }}</p>
+                <div class="activity-meta">
+                    <div class="meta-item">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span id="distance-{{ activity.id }}">
+                            {% if activity.distance %}
+                                {{ activity.distance|floatformat:1 }} km
+                            {% else %}
+                                Calculating...
+                            {% endif %}
                         </span>
                     </div>
-                    
-                    <div class="action-buttons">
-                        <a href="https://www.google.com/maps/dir/?api=1&destination={{ activity.latitude }},{{ activity.longitude }}" 
-                           target="_blank" 
-                           class="btn btn-outline-primary btn-sm">
-                            <i class="fas fa-directions"></i> Get Directions
-                        </a>
-                        <a href="{% url 'activities:add_to_history_form' activity.id %}" 
-                           class="btn btn-outline-info btn-sm">
-                            <i class="fas fa-history"></i> Add to History
-                        </a>
-                        <button class="btn {% if activity in favorite_activities %}btn-success{% else %}btn-outline-success{% endif %} btn-sm" onclick="toggleFavorite({{ activity.id }})">
-                            <i class="{% if activity in favorite_activities %}fas{% else %}far{% endif %} fa-heart"></i>
-                            {% if activity in favorite_activities %}Remove from{% else %}Add to{% endif %} Favorites
-                        </button>
+                    <div class="meta-item">
+                        <i class="fas fa-{% if activity.is_indoor %}door-closed{% else %}cloud-sun{% endif %}"></i>
+                        <span>{% if activity.is_indoor %}Indoor{% else %}Outdoor{% endif %}</span>
                     </div>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="action-buttons" style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+                    <a href="https://www.google.com/maps/dir/?api=1&destination={{ activity.latitude }},{{ activity.longitude }}" 
+                       target="_blank" 
+                       class="btn btn-outline-primary btn-sm" 
+                       style="flex: 1;">
+                        <i class="fas fa-directions"></i>
+                        Get Directions
+                    </a>
+                    <a href="{% url 'activities:add_to_history_form' activity.id %}" 
+                       class="btn btn-outline-success btn-sm" 
+                       style="flex: 1;">
+                        <i class="fas fa-plus"></i>
+                        Add to History
+                    </a>
                 </div>
             </div>
         </div>
         {% empty %}
         <div class="col-12">
             <div class="alert alert-warning" role="alert">
-                <i class="fas fa-exclamation-triangle mr-2"></i>
+                <i class="fas fa-exclamation-triangle me-2"></i>
                 No recommendations available at the moment. Try adjusting your preferences or enabling location services.
             </div>
         </div>
@@ -268,23 +407,15 @@ function toggleFavorite(activityId) {
     .then(response => response.json())
     .then(data => {
         if (data.status === 'success') {
-            // Get the button element
             const button = document.querySelector(`button[onclick="toggleFavorite(${activityId})"]`);
             const icon = button.querySelector('i');
             
-            // Update button appearance
             if (data.is_favorite) {
-                button.classList.remove('btn-outline-success');
-                button.classList.add('btn-success');
                 icon.classList.remove('far');
                 icon.classList.add('fas');
-                button.innerHTML = `<i class="fas fa-heart"></i> Remove from Favorites`;
             } else {
-                button.classList.remove('btn-success');
-                button.classList.add('btn-outline-success');
                 icon.classList.remove('fas');
                 icon.classList.add('far');
-                button.innerHTML = `<i class="far fa-heart"></i> Add to Favorites`;
             }
         } else {
             alert('Error: ' + (data.message || 'Could not update favorite status'));
@@ -292,7 +423,7 @@ function toggleFavorite(activityId) {
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Error toggling favorite status');
+        alert('Error updating favorite status');
     });
 }
 </script>

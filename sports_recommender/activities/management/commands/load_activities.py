@@ -53,8 +53,8 @@ class Command(BaseCommand):
                         longitude=float(row['Longitude']) if row['Longitude'] else None,
                         intensity='MEDIUM',  # Default intensity
                         operating_hours='9:00 AM - 10:00 PM',  # Default operating hours
-                        price_range='$',  # Default price range
-                        contact_info='',  # No contact info in CSV
+                        price_range='$1.80 - $9.00',  # Updated default price range
+                        contact_info='85993729',  # Updated default contact info
                         image_url='',  # No image URL in CSV
                         is_indoor=is_indoor
                     )
