@@ -91,20 +91,53 @@ class UserPreference(models.Model):
         ('O', 'Other')
     ]
 
+    ACTIVITY_CHOICES = [
+        ('running', 'Running/Jogging/Walking'),
+        ('swimming', 'Swimming'),
+        ('badminton', 'Badminton'),
+        ('basketball', 'Basketball'),
+        ('tennis', 'Tennis'),
+        ('table_tennis', 'Table Tennis'),
+        ('volleyball', 'Volleyball'),
+        ('pickleball', 'Pickleball'),
+        ('gym', 'Gym'),
+        ('soccer', 'Soccer'),
+        ('squash', 'Squash'),
+        ('netball', 'Netball'),
+        ('lawn_bowl', 'Lawn Bowl'),
+        ('hockey', 'Hockey'),
+    ]
+
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=100, blank=True)
     age = models.IntegerField(null=True, blank=True)
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES, blank=True)
-    preferred_activity_types = models.CharField(max_length=100, help_text="Comma-separated list of activity types")
+    preferred_activity_types = models.CharField(max_length=200, help_text="Comma-separated list of activity types", blank=True)
     max_distance = models.DecimalField(max_digits=5, decimal_places=2, help_text="Maximum distance in kilometers", default=10.0)
     indoor_preference = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def get_preferred_activity_types(self):
-        if self.preferred_activity_types:
-            return [activity_type.strip() for activity_type in self.preferred_activity_types.split(',')]
-        return []
+        """Convert stored comma-separated string into a list of activity types."""
+        if not self.preferred_activity_types:
+            return []
+        # Split by comma and clean up any whitespace
+        activities = [act.strip() for act in self.preferred_activity_types.split(',') if act.strip()]
+        # Ensure all activities are valid choices
+        valid_activities = [choice[0] for choice in self.ACTIVITY_CHOICES]
+        return [act for act in activities if act in valid_activities]
+
+    def set_preferred_activity_types(self, activities):
+        """Store activity types as a comma-separated string."""
+        if not activities:
+            self.preferred_activity_types = ''
+            return
+        
+        # Ensure all activities are valid choices
+        valid_activities = [choice[0] for choice in self.ACTIVITY_CHOICES]
+        valid_list = [act for act in activities if act in valid_activities]
+        self.preferred_activity_types = ','.join(valid_list)
 
     def __str__(self):
         return f"{self.user.username}'s preferences"

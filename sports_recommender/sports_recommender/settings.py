@@ -122,6 +122,10 @@ SITE_ID = 1
 LOGIN_REDIRECT_URL = 'activities:home'
 LOGOUT_REDIRECT_URL = 'activities:home'
 
+# Site Configuration
+SITE_NAME = 'TrainWise'
+SITE_DOMAIN = '127.0.0.1:8000'
+
 # Account settings
 ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
 ACCOUNT_EMAIL_REQUIRED = True
@@ -131,14 +135,16 @@ ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 7
 ACCOUNT_LOGIN_ATTEMPTS_LIMIT = 5
 ACCOUNT_LOGIN_ATTEMPTS_TIMEOUT = 300  # 5 minutes
 ACCOUNT_LOGOUT_ON_PASSWORD_CHANGE = True
+ACCOUNT_EMAIL_SUBJECT_PREFIX = ''  # Remove default prefix from email subjects
 
 # Email settings
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
 EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
-EMAIL_USE_TLS = True
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER)
 
 # Social Auth settings
 SOCIALACCOUNT_PROVIDERS = {} 
